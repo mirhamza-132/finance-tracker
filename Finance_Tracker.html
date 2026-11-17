@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c12" id="metaTheme">
+<meta name="description" content="Monthly Finance Tracker — offline">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Finance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+try{var _t=localStorage.getItem('theme_pref')||'dark';document.documentElement.setAttribute('data-theme',_t);
+document.getElementById('metaTheme').setAttribute('content',_t==='light'?'#f3f4f9':'#0b0c12');}catch(e){}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c12;--surface:#13151d;--surface2:#1a1d28;--line:#262a39;--line2:#383d54;
+  --text:#eceef6;--text2:#9aa0b8;--text3:#646a84;
+  --accent:#8b7cf6;--accent2:#2dd4bf;--pos:#34d399;--neg:#f87171;--warn:#fbbf24;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --font-b:'DM Sans','Noto Sans Bengali',system-ui,sans-serif;
+  --font-n:'JetBrains Mono',ui-monospace,monospace;
+  --r:16px;--r-sm:10px;--ease:all .18s ease;
+  color-scheme:dark;
+}
+[data-theme=light]{
+  --bg:#f3f4f9;--surface:#ffffff;--surface2:#f3f4fa;--line:#e4e6f0;--line2:#ccd0e2;
+  --text:#161826;--text2:#545a74;--text3:#8a90a8;
+  --accent:#6552e0;--accent2:#0d9488;--pos:#059669;--neg:#dc2626;--warn:#b45309;
+  --shadow:0 1px 2px rgba(20,24,50,.06),0 6px 20px rgba(20,24,50,.07);
+  color-scheme:light;
+}
+html{font-family:var(--font-b);background:var(--bg);color:var(--text);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{min-height:100vh;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px));transition:background .2s}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+input,textarea,select,button{font-family:inherit;color:inherit}
+input[type=text],input[type=number],textarea,select{background:transparent;border:none;outline:none;width:100%}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+::placeholder{color:var(--text3)}
+button{cursor:pointer}
+.app{max-width:860px;margin:0 auto;padding:max(16px,env(safe-area-inset-top,0px)) 14px 20px}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:12px}
+.hero-head{display:flex;align-items:center;padding-right:48px}
+.app-title{font-size:clamp(1.5rem,5vw,1.9rem);font-weight:700;letter-spacing:-.025em;white-space:nowrap;
+  background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.app-desc{font-size:.84rem;line-height:1.6;color:var(--text2);margin-top:8px;}
+.toolbar{display:flex;align-items:center;gap:14px;margin-top:14px}
+.toolbar .theme-btn{margin-left:auto}
+.icon-btn{width:38px;height:38px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--text2);
+  display:inline-flex;align-items:center;justify-content:center;transition:var(--ease)}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn:active{transform:scale(.94)}
+.theme-btn .sun{display:none}
+[data-theme=dark] .theme-btn .sun{display:block}
+[data-theme=dark] .theme-btn .moon{display:none}
+
+/* period panel */
+.period-row{display:flex;align-items:center;gap:8px}
+.select-wrap{position:relative;flex:1;min-width:0}
+.select-wrap.yr{flex:0 0 96px}
+.select-wrap select{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 30px 10px 12px;
+  font-size:.9rem;font-weight:500;appearance:none;-webkit-appearance:none;cursor:pointer;transition:var(--ease)}
+.select-wrap select:focus,.select-wrap select:hover{border-color:var(--accent)}
+.select-wrap::after{content:'';position:absolute;right:13px;top:50%;width:6px;height:6px;border:solid var(--text3);border-width:0 2px 2px 0;
+  transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.today-line{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:.78rem;color:var(--text2)}
+.today-line svg{width:14px;height:14px;color:var(--accent2)}
+.today-line b{font-weight:600;color:var(--text)}
+
+/* tabs */
+.tab-nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin:16px 0}
+.tab-btn{flex:1;padding:10px;border:none;border-radius:10px;background:transparent;color:var(--text2);font-size:.85rem;font-weight:600;transition:var(--ease)}
+.tab-btn.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* sections */
+.sec{display:flex;align-items:center;gap:10px;margin:24px 2px 10px}
+.sec h2{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text2)}
+.sec .line{flex:1;height:1px;background:var(--line)}
+.badge{font-family:var(--font-n);font-size:.72rem;font-weight:500;padding:3px 10px;border-radius:20px}
+.b-p{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.b-t{background:color-mix(in srgb,var(--accent2) 14%,transparent);color:var(--accent2)}
+.b-a{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+
+/* rows */
+.card{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:9px 10px 9px 16px;margin-bottom:8px;transition:var(--ease);animation:fade .25s ease both}
+.card:hover{border-color:var(--line2)}
+.card.tint{background:color-mix(in srgb,var(--accent) 7%,var(--surface));border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
+.cap{flex:1;min-width:0;font-size:.95rem;font-weight:500;text-overflow:ellipsis}
+.card.stack{flex-direction:column;align-items:stretch;gap:10px;padding:12px 12px 12px 16px}
+.row-top{display:flex;align-items:center;gap:8px;min-height:28px}
+.card.stack .cap{font-size:1rem;font-weight:600}
+.card.stack .amt{width:100%}
+.amt{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:8px 11px;width:132px;flex-shrink:0;transition:var(--ease)}
+.amt:focus-within{border-color:var(--accent2);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent2) 16%,transparent)}
+.curr-label{font-family:var(--font-n);font-size:.78rem;color:var(--text3)}
+.amount-input{font-family:var(--font-n);font-size:.92rem;font-weight:600;color:var(--accent2);text-align:right;min-width:0;flex:1}
+.amt.ro .amount-input{color:var(--accent)}
+.del-btn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--text3);font-size:1.15rem;line-height:1;transition:var(--ease);flex-shrink:0}
+.del-btn:hover{background:color-mix(in srgb,var(--neg) 16%,transparent);color:var(--neg)}
+.add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:14px;margin-top:2px;
+  background:transparent;border:1.5px dashed var(--line2);color:var(--text2);font-size:.86rem;font-weight:500;transition:var(--ease)}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.feed{border-color:color-mix(in srgb,var(--neg) 30%,var(--line));background:color-mix(in srgb,var(--neg) 5%,var(--surface))}
+.feed .ft{font-size:.9rem;font-weight:600;flex:1}
+.feed .fs{font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px}
+.feed .fa{font-family:var(--font-n);font-weight:700;color:var(--neg);font-size:.98rem;padding-right:8px}
+
+/* summary */
+.hero{text-align:center;padding:22px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:var(--ease)}
+.hero.pos{border-color:color-mix(in srgb,var(--pos) 40%,var(--line));background:color-mix(in srgb,var(--pos) 6%,var(--surface))}
+.hero.neg{border-color:color-mix(in srgb,var(--neg) 40%,var(--line));background:color-mix(in srgb,var(--neg) 6%,var(--surface))}
+.hero .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;font-weight:600;color:var(--text2)}
+.hero .big{font-family:var(--font-n);font-size:clamp(1.8rem,8vw,2.4rem);font-weight:700;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;min-width:0}
+.chip .l{font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600;margin-bottom:5px}
+.chip .v{font-family:var(--font-n);font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-panel{padding:14px 16px}
+.note-panel .cap{display:block;width:100%;font-weight:600;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.note-text{display:block;width:100%;min-height:110px;resize:none;overflow:hidden;font-size:.92rem;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+
+/* daily */
+.stats2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.box .l{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:6px}
+.box .v{font-family:var(--font-n);font-size:1.05rem;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.box .s{font-size:.68rem;color:var(--text3);margin-top:3px}
+.chart-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 14px 12px;margin-bottom:12px;box-shadow:var(--shadow)}
+.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px;padding:0 4px}
+.chart-title{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;font-weight:700;color:var(--text2)}
+.readout{font-family:var(--font-n);font-size:.74rem;color:var(--accent2);font-weight:500;text-align:right}
+.chart-scroll{overflow-x:auto;padding-bottom:4px}
+.chart-in{position:relative}
+.bars,.labels{display:grid;gap:0}
+.bars{height:120px;align-items:end;border-bottom:1px solid var(--line2);
+  background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% 50%}
+.slot{height:100%;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.bar{width:12px;min-height:3px;border-radius:5px 5px 2px 2px;background:linear-gradient(to top,var(--accent2),var(--accent));transition:height .4s ease,opacity .2s}
+.slot.zero .bar{opacity:.28;background:var(--text3)}
+.slot:hover .bar,.slot.sel .bar{filter:brightness(1.2);opacity:1}
+.labels{margin-top:6px}
+.labels span{text-align:center;font-family:var(--font-n);font-size:.62rem;color:var(--text3)}
+.labels span.today{color:var(--accent);font-weight:700}
+
+.day-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden;transition:var(--ease)}
+.day-card.today{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.day-card:hover{border-color:var(--line2)}
+.day-header{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;cursor:pointer;user-select:none}
+.day-title{flex:1;min-width:0}
+.day-num{font-weight:600;font-size:.98rem;display:flex;align-items:center;gap:8px}
+.tag{font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.day-weekday{font-size:.72rem;color:var(--text3);margin-top:1px}
+.day-toggle{width:30px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:var(--ease)}
+.day-toggle svg{width:16px;height:16px}
+.day-card.open .day-toggle{transform:rotate(180deg);color:var(--accent2)}
+.day-details{display:none;padding:2px 16px 14px;border-top:1px solid var(--line)}
+.day-card.open .day-details{display:block}
+.day-inner{padding-top:12px}
+.day-detail-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.day-detail-caption{flex:1;min-width:0;font-size:.86rem;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;transition:var(--ease)}
+.day-detail-caption:focus{border-color:var(--line2)}
+.day-detail-amount{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;width:112px;flex-shrink:0}
+.day-detail-amount:focus-within{border-color:var(--accent2)}
+.day-detail-amount input{font-family:var(--font-n);font-size:.84rem;font-weight:600;color:var(--accent2);text-align:right;min-width:0;flex:1}
+.day-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border-radius:var(--r-sm);background:transparent;border:1.5px dashed var(--line2);color:var(--text3);font-size:.8rem;transition:var(--ease)}
+.day-add-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.day-note{display:block;width:100%;font-size:.84rem;color:var(--text2);background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;resize:vertical;min-height:58px;margin-top:8px}
+.day-note:focus{border-color:var(--line2);color:var(--text)}
+.day-total-bar{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:9px 12px;background:var(--surface2);border-radius:var(--r-sm)}
+.day-total-bar span{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600}
+.day-total-bar strong{font-family:var(--font-n);font-size:.88rem;color:var(--accent2)}
+
+.footer{text-align:center;padding:26px 0 6px;font-size:.7rem;color:var(--text3)}
+#scrollTop{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:20px;width:42px;height:42px;border-radius:50%;border:none;
+  background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:var(--ease);
+  box-shadow:0 4px 16px color-mix(in srgb,var(--accent) 45%,transparent);z-index:100}
+#scrollTop.vis{opacity:1;pointer-events:all}
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--surface);border:1px solid var(--accent2);
+  padding:10px 18px;border-radius:12px;font-size:.84rem;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:all .25s ease;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* lock indicator: icon only */
+#lockIndicator{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,calc((100vw - 860px)/2 + 14px));z-index:500;display:none}
+#lockIndicator.vis{display:inline-flex}
+
+/* lock screen */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;animation:fade .4s ease both}
+#lockScreen.hidden{display:none}
+.lock-wrap{width:100%;max-width:400px;text-align:center}
+.lock-logo{width:68px;height:68px;border-radius:20px;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 36px color-mix(in srgb,var(--accent) 38%,transparent)}
+.lock-title{font-size:1.8rem;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lock-subtitle{font-size:.84rem;color:var(--text2);margin-bottom:26px;line-height:1.55}
+.lock-box{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow);text-align:left}
+.lock-field-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);margin-bottom:8px;display:block}
+.lock-input-wrap{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:6px;transition:var(--ease)}
+.lock-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.lock-input{flex:1;min-width:0;width:100%;font-family:var(--font-n);font-size:.95rem;font-weight:500;letter-spacing:.05em}
+.lock-input::placeholder{font-family:var(--font-b);letter-spacing:0;font-size:.85rem}
+.lock-eye{background:none;border:none;color:var(--text3);padding:2px;display:flex;flex-shrink:0;transition:var(--ease)}
+.lock-eye:hover{color:var(--accent)}
+.lock-eye svg{width:19px;height:19px}.lock-eye .off{display:none}.lock-eye.shown .on{display:none}.lock-eye.shown .off{display:block}
+.lock-links{display:flex;justify-content:space-between;margin-top:16px}
+.lock-link{background:none;border:none;color:var(--accent);font-size:.8rem;font-weight:600;padding:2px 0}
+.lock-link:hover{text-decoration:underline}
+.lock-btn.danger{background:var(--neg)}
+.lock-ok{display:none;background:color-mix(in srgb,var(--pos) 12%,transparent);border:1px solid color-mix(in srgb,var(--pos) 35%,transparent);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.8rem;color:var(--pos)}
+.lock-ok.visible{display:block}
+.lock-steps{font-size:.82rem;color:var(--text2);line-height:1.6;margin:0 0 14px 18px}
+.lock-steps li{margin-bottom:4px}
+.lock-hint{font-size:.7rem;color:var(--text3);margin-bottom:18px}
+.lock-hint.new-hint{color:var(--accent2)}
+.lock-btn{width:100%;padding:13px;border-radius:12px;border:none;color:#fff;font-size:.92rem;font-weight:600;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:var(--ease)}
+.lock-btn:hover{transform:translateY(-1px)}
+.lock-btn:disabled{opacity:.5}
+.lock-divider{height:1px;background:var(--line);margin:18px 0}
+.lock-setup-note{font-size:.74rem;color:var(--text3);text-align:center;line-height:1.5}
+.lock-setup-note span{color:var(--accent)}
+.lock-error{display:none;background:color-mix(in srgb,var(--neg) 12%,transparent);border:1px solid color-mix(in srgb,var(--neg) 35%,transparent);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.8rem;color:var(--neg);animation:shake .35s ease}
+.lock-error.visible{display:block}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+.lock-attempts{font-size:.7rem;color:var(--text3);text-align:center;margin-top:12px;font-family:var(--font-n)}
+#appContent{display:none}#appContent.unlocked{display:block}
+
+@media(max-width:520px){
+  .amt{width:112px}.day-detail-amount{width:98px}
+  .stats{grid-template-columns:1fr}.chip{display:flex;justify-content:space-between;align-items:center;padding:11px 14px}.chip .l{margin:0}
+  .stats2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-wrap">
+    <div class="lock-logo">💰</div>
+    <div class="lock-title">Finance Tracker</div>
+    <div class="lock-subtitle" id="lockSubtitle">Your personal finance data is protected.<br>Enter your PIN to continue.</div>
+    <div class="lock-box">
+      <div class="lock-error" id="lockError">Incorrect PIN. Please try again.</div>
+      <div class="lock-ok" id="lockOk"></div>
+      <div id="lockSetupExtra" style="display:none">
+        <label class="lock-field-label">Create a PIN</label>
+        <div class="lock-input-wrap">
+          <span>🔐</span>
+          <input class="lock-input" id="lockNewPin" type="password" inputmode="numeric" maxlength="20" placeholder="Choose a PIN or password" onkeydown="if(event.key==='Enter')lockSetupConfirm()">
+          <button class="lock-eye" onclick="toggleLockEye('lockNewPin',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button>
+        </div>
+        <label class="lock-field-label" style="margin-top:14px">Confirm PIN</label>
+        <div class="lock-input-wrap">
+          <span>✅</span>
+          <input class="lock-input" id="lockConfirmPin" type="password" inputmode="numeric" maxlength="20" placeholder="Re-enter your PIN" onkeydown="if(event.key==='Enter')lockSetupConfirm()">
+          <button class="lock-eye" onclick="toggleLockEye('lockConfirmPin',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button>
+        </div>
+        <p class="lock-hint new-hint" style="margin-top:6px">This PIN will be required every time you open the tracker.</p>
+        <div class="lock-divider"></div>
+        <button class="lock-btn" onclick="lockSetupConfirm()">Set PIN &amp; Unlock</button>
+        <p class="lock-setup-note" style="margin-top:16px">PIN is stored locally on your device only.<br><span>No data is sent anywhere.</span></p>
+      </div>
+      <div id="lockLoginExtra">
+        <label class="lock-field-label">Enter your PIN</label>
+        <div class="lock-input-wrap">
+          <span>🔑</span>
+          <input class="lock-input" id="lockPin" type="password" inputmode="numeric" maxlength="20" placeholder="Your PIN or password" oninput="lockAutoCheck()" onkeydown="if(event.key==='Enter')lockTryUnlock()">
+          <button class="lock-eye" onclick="toggleLockEye('lockPin',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button>
+        </div>
+        <p class="lock-hint" id="lockHintText" style="margin-top:6px"></p>
+        <div class="lock-divider"></div>
+        <button class="lock-btn" onclick="lockTryUnlock()">Unlock</button>
+        <p class="lock-attempts" id="lockAttemptsMsg"></p>
+        <div class="lock-links">
+          <button class="lock-link" onclick="lockShow('change')">Change PIN</button>
+          <button class="lock-link" onclick="lockShow('forgot')">Forgot PIN?</button>
+        </div>
+      </div>
+      <div id="lockChangeExtra" style="display:none">
+        <label class="lock-field-label">Current PIN</label>
+        <div class="lock-input-wrap"><input class="lock-input" id="lockOldPin" type="password" inputmode="numeric" maxlength="20" placeholder="Current PIN"><button class="lock-eye" onclick="toggleLockEye('lockOldPin',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button></div>
+        <label class="lock-field-label" style="margin-top:14px">New PIN</label>
+        <div class="lock-input-wrap"><input class="lock-input" id="lockChgNew" type="password" inputmode="numeric" maxlength="20" placeholder="New PIN (min 4 characters)"><button class="lock-eye" onclick="toggleLockEye('lockChgNew',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button></div>
+        <label class="lock-field-label" style="margin-top:14px">Confirm new PIN</label>
+        <div class="lock-input-wrap"><input class="lock-input" id="lockChgConf" type="password" inputmode="numeric" maxlength="20" placeholder="Re-enter new PIN" onkeydown="if(event.key==='Enter')lockChangeConfirm()"><button class="lock-eye" onclick="toggleLockEye('lockChgConf',this)"><span class="on"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="off"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></span></button></div>
+        <div class="lock-divider"></div>
+        <button class="lock-btn" onclick="lockChangeConfirm()">Update PIN</button>
+        <div class="lock-links"><button class="lock-link" onclick="lockShow('login')">← Back</button></div>
+      </div>
+      <div id="lockForgotExtra" style="display:none">
+        <p class="lock-setup-note" style="text-align:left;margin-bottom:10px">Your PIN is stored only on this device and cannot be recovered. To get back in:</p>
+        <ol class="lock-steps">
+          <li>Reset the app below. This <b>erases all data on this device</b>.</li>
+          <li>Create a new PIN.</li>
+          <li>Restore your data with the Restore icon, using your latest backup file.</li>
+        </ol>
+        <label class="lock-field-label">Type RESET to confirm</label>
+        <div class="lock-input-wrap"><input class="lock-input" id="lockResetConfirm" type="text" autocomplete="off" placeholder="RESET" onkeydown="if(event.key==='Enter')lockResetApp()"></div>
+        <div class="lock-divider"></div>
+        <button class="lock-btn danger" onclick="lockResetApp()">Erase data &amp; reset PIN</button>
+        <div class="lock-links"><button class="lock-link" onclick="lockShow('login')">← Back</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING LOCK (icon only) -->
+<button id="lockIndicator" class="icon-btn" onclick="lockApp()" title="Lock" aria-label="Lock">
+  <svg class="i" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+</button>
+
+<div id="appContent">
+<div class="app">
+
+  <!-- SECTION 1: title + description + theme -->
+  <div class="panel">
+    <div class="hero-head">
+      <div class="app-title">Finance Tracker</div>
+    </div>
+    <p class="app-desc">Track your monthly income, expenses and daily spending in one place. See your savings at a glance, privately and offline.</p>
+    <div class="toolbar">
+      <button class="icon-btn" onclick="exportAllData()" title="Backup (export)" aria-label="Backup">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10.5L12 15l4.5-4.5M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg>
+      </button>
+      <button class="icon-btn" onclick="document.getElementById('restoreFileInput').click()" title="Restore (import)" aria-label="Restore">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12 15.5v-11M7.5 9L12 4.5 16.5 9M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/></svg>
+      </button>
+      <input type="file" id="restoreFileInput" accept="application/json" style="display:none" onchange="importAllData(event)">
+      <button class="icon-btn theme-btn" onclick="toggleTheme()" title="Dark / Light" aria-label="Toggle theme">
+        <svg class="i sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+        <svg class="i moon" viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SECTION 2: period + today + backup/restore -->
+  <div class="panel">
+    <div class="period-row">
+      <div class="select-wrap">
+        <select id="selMonth" onchange="onPeriodChange()">
+          <option value="0">January</option><option value="1">February</option><option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option><option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option><option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+      <div class="select-wrap yr"><select id="selYear" onchange="onPeriodChange()"></select></div>
+    </div>
+    <div class="today-line">
+      <svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      Today: <b id="todayDate"></b>
+    </div>
+  </div>
+  <div id="backupToast" class="toast"></div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('monthly',this)">Monthly Overview</button>
+    <button class="tab-btn" onclick="switchTab('daily',this)">Daily Tracker</button>
+  </div>
+
+  <!-- MONTHLY -->
+  <div id="tab-monthly" class="tab-content active">
+    <div class="sec" style="margin-top:4px"><h2>Previous Savings</h2><div class="line"></div><span class="badge b-p">Carry over</span></div>
+    <div class="card stack tint">
+      <div class="row-top"><input class="cap" id="prevCaption" type="text" value="Savings from Previous Month" placeholder="Label..." oninput="save()"></div>
+      <div class="amt"><span class="curr-label">৳</span><input class="amount-input" id="prevAmt" type="number" min="0" value="0" placeholder="0" oninput="calcAll()"></div>
+    </div>
+
+    <div class="sec"><h2>Income</h2><div class="line"></div><span class="badge b-t" id="totalIncomeLabel">0</span></div>
+    <div id="incomeList"></div>
+    <button class="add-btn" onclick="addRow('income')">+ Add Income</button>
+
+    <div class="sec"><h2>Expenditure</h2><div class="line"></div><span class="badge b-a" id="totalExpLabel">0</span></div>
+    <div id="expList"></div>
+    <div class="card feed">
+      <div style="flex:1;min-width:0"><div class="ft">Daily Tracker Total</div><div class="fs">Auto‑synced from Daily Tracker</div></div>
+      <div class="fa"><span class="curr-label">৳</span> <span id="dailyFeedAmt">0</span></div>
+    </div>
+    <button class="add-btn" onclick="addRow('exp')">+ Add Expense</button>
+
+    <div class="sec"><h2>Summary</h2><div class="line"></div><span class="badge b-p">Auto</span></div>
+    <div class="hero" id="netCard">
+      <div class="lbl">Money Remaining</div>
+      <div class="big" id="netDisplay">৳ 0</div>
+    </div>
+    <div class="stats">
+      <div class="chip"><div class="l">Income</div><div class="v" style="color:var(--accent2)" id="sc-income">0</div></div>
+      <div class="chip"><div class="l">Expenses</div><div class="v" style="color:var(--neg)" id="sc-exp">0</div></div>
+      <div class="chip"><div class="l">Net Balance</div><div class="v" id="sc-net">0</div></div>
+    </div>
+    <div class="card stack tint" style="margin-top:0">
+      <div class="row-top"><input class="cap" id="savingsCaption" type="text" value="This Month's Savings" placeholder="Label..." oninput="save()"></div>
+      <div class="amt ro"><span class="curr-label">৳</span><input class="amount-input" type="number" id="savingsAmt" placeholder="0" readonly tabindex="-1"></div>
+    </div>
+
+    <!-- Additional Note: free text only -->
+    <div class="panel note-panel" style="margin-top:12px">
+      <input class="cap" id="addCaption" type="text" value="Additional Note" placeholder="Label..." oninput="save()">
+      <textarea class="note-text" id="addNote" placeholder="Write anything important about this month…" oninput="autoGrow(this);save()"></textarea>
+    </div>
+  </div>
+
+  <!-- DAILY -->
+  <div id="tab-daily" class="tab-content">
+    <div class="chart-wrap">
+      <div class="chart-head">
+        <div class="chart-title">Daily Spending · <span id="chartMonthLabel"></span></div>
+        <div class="readout" id="chartReadout"></div>
+      </div>
+      <div class="chart-scroll"><div class="chart-in" id="barChart"></div></div>
+    </div>
+    <div class="stats2">
+      <div class="box"><div class="l">Total Daily Expenditure</div><div class="v" style="color:var(--neg)" id="dailyTotalDisp">৳ 0</div><div class="s">Sum of all days this month</div></div>
+      <div class="box"><div class="l">Daily Average</div><div class="v" style="color:var(--warn)" id="dailyAvgDisp">৳ 0</div><div class="s" id="dailyAvgSub">Over 0 active days</div></div>
+    </div>
+    <div id="dailyList"></div>
+  </div>
+
+  <div class="footer">Finance Tracker · All data stored locally</div>
+</div>
+</div>
+
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Top">
+  <svg class="i" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script>
+const CUR = '৳';
+let savingsOverridden = false;
+let currentKey = '';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/* ── THEME ─────────────────────────────── */
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme')==='light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('metaTheme').setAttribute('content', next==='light'?'#f3f4f9':'#0b0c12');
+  try{ localStorage.setItem('theme_pref', next); }catch(e){}
+}
+
+/* ── TODAY ─────────────────────────────── */
+function renderToday(){
+  const el = document.getElementById('todayDate');
+  if(el) el.textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+/* ── STATE & STORAGE ───────────────────── */
+function getKey(){ return `ft_${document.getElementById('selYear').value}_${document.getElementById('selMonth').value}`; }
+
+function defaultState(){
+  return {
+    prevCaption:'Savings from Previous Month', prevAmt:0,
+    income:[{caption:'Salary',amt:0},{caption:'Freelance Work',amt:0}],
+    exp:[{caption:'Rent',amt:0},{caption:'Groceries',amt:0},{caption:'Transport',amt:0},{caption:'Utilities',amt:0},{caption:'Entertainment',amt:0}],
+    savingsAmt:'', savingsOverridden:false, addCaption:'Additional Note', addNote:'', daily:[]
+  };
+}
+function loadState(){
+  currentKey = getKey();
+  try{ const raw = localStorage.getItem(currentKey); if(raw) return JSON.parse(raw); }catch(e){}
+  return defaultState();
+}
+function saveState(st){
+  // always write to currentKey (the month on screen), never the live dropdown value
+  try{ localStorage.setItem(currentKey || getKey(), JSON.stringify(st)); }catch(e){}
+}
+function collectRows(id){
+  return [...document.querySelectorAll(`#${id} .card`)].map(c=>({
+    caption: c.querySelector('.cap').value,
+    amt: parseFloat(c.querySelector('.amount-input').value)||0
+  }));
+}
+function collectState(){
+  return {
+    prevCaption: document.getElementById('prevCaption').value,
+    savingsCaption: document.getElementById('savingsCaption').value,
+    prevAmt: parseFloat(document.getElementById('prevAmt').value)||0,
+    income: collectRows('incomeList'), exp: collectRows('expList'),
+    savingsAmt: document.getElementById('savingsAmt').value, savingsOverridden,
+    addCaption: document.getElementById('addCaption').value,
+    addNote: document.getElementById('addNote').value,
+    daily: collectDailyState()
+  };
+}
+function save(){ if(window.__noSave) return; saveState(collectState()); }
+
+/* ── BACKUP / RESTORE ──────────────────── */
+function showToast(msg){
+  const t = document.getElementById('backupToast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function exportAllData(){
+  save();
+  const backup = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k && /^ft_\d+_\d+$/.test(k)){ try{ backup[k] = JSON.parse(localStorage.getItem(k)); }catch(e){} }
+  }
+  const payload = { type:'finance-tracker-backup', exportedAt:new Date().toISOString(), months:backup };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = `finance-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  showToast('✔ Backup downloaded');
+}
+function importAllData(evt){
+  const file = evt.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const payload = JSON.parse(reader.result);
+      const months = payload.months || payload;
+      let count = 0;
+      Object.keys(months).forEach(k=>{
+        if(/^ft_\d+_\d+$/.test(k)){ localStorage.setItem(k, JSON.stringify(months[k])); count++; }
+      });
+      showToast(`✔ Restored ${count} month${count===1?'':'s'}`);
+      applyState(loadState());
+    }catch(e){ showToast('✖ Could not read that backup file'); }
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ── INIT ──────────────────────────────── */
+window.addEventListener('DOMContentLoaded', ()=>{
+  const ySel = document.getElementById('selYear'), now = new Date();
+  for(let y=now.getFullYear()-3;y<=now.getFullYear()+2;y++){
+    const o=document.createElement('option'); o.value=y; o.textContent=y;
+    if(y===now.getFullYear()) o.selected=true; ySel.appendChild(o);
+  }
+  document.getElementById('selMonth').value = now.getMonth();
+  renderToday();
+  applyState(loadState());
+
+  window.addEventListener('scroll',()=>document.getElementById('scrollTop').classList.toggle('vis', window.scrollY>200));
+  document.addEventListener('input', debounce(()=>{ save(); calcAll(); }, 400));
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); else{ renderToday(); updateBarChart(); } });
+
+  const bc = document.getElementById('barChart');
+  const pick = e=>{
+    const s = e.target.closest('.slot'); if(!s) return;
+    bc.querySelectorAll('.slot.sel').forEach(x=>x.classList.remove('sel')); s.classList.add('sel');
+    document.getElementById('chartReadout').textContent = s.dataset.tip;
+  };
+  bc.addEventListener('click', pick); bc.addEventListener('mouseover', pick);
+});
+
+function onPeriodChange(){
+  save();                 // flush the old month first
+  applyState(loadState()); // then switch to the new one
+}
+
+function applyState(st){
+  document.getElementById('prevCaption').value = st.prevCaption||'Savings from Previous Month';
+  document.getElementById('savingsCaption').value = st.savingsCaption||"This Month's Savings";
+  document.getElementById('prevAmt').value = st.prevAmt||0;
+  document.getElementById('addCaption').value = st.addCaption||'Additional Note';
+  const note = document.getElementById('addNote'); note.value = st.addNote||''; autoGrow(note);
+  document.getElementById('savingsAmt').value = st.savingsAmt||'';
+  savingsOverridden = st.savingsOverridden||false;
+  renderList('incomeList', st.income||[{caption:'Salary',amt:0},{caption:'Freelance Work',amt:0}], 'income');
+  renderList('expList', st.exp||[{caption:'Rent',amt:0}], 'exp');
+  renderDailyList(st.daily||[]);
+  calcAll();
+}
+function autoGrow(el){ el.style.height='auto'; el.style.height=Math.max(110, el.scrollHeight)+'px'; }
+
+/* ── INCOME / EXPENSE ROWS ─────────────── */
+function renderList(id, rows, type){
+  const c = document.getElementById(id); c.innerHTML='';
+  rows.forEach(r=>c.appendChild(makeRow(r.caption, r.amt, type)));
+  sortList(id);
+}
+function makeRow(caption, amt, type){
+  const id = type==='income' ? 'incomeList' : 'expList';
+  const div = document.createElement('div');
+  div.className='card stack';
+  div.innerHTML=`
+    <div class="row-top">
+      <input class="cap" type="text" value="${esc(caption)}" placeholder="Description..." oninput="save()">
+      <button class="del-btn" onclick="delRow(this)" title="Remove">×</button>
+    </div>
+    <div class="amt"><span class="curr-label">${CUR}</span>
+      <input class="amount-input" type="number" min="0" value="${amt||''}" placeholder="0" oninput="calcAll()" onchange="sortList('${id}')"></div>`;
+  return div;
+}
+function addRow(type){
+  const box = document.getElementById(type==='income'?'incomeList':'expList');
+  box.appendChild(makeRow('',0,type));
+  box.lastChild.querySelector('.cap').focus();
+  save();
+}
+function delRow(btn){ btn.closest('.card').remove(); save(); calcAll(); }
+function sortList(id){
+  const c = document.getElementById(id); if(!c) return;
+  [...c.querySelectorAll(':scope > .card')]
+    .sort((a,b)=>(parseFloat(b.querySelector('.amount-input').value)||0)-(parseFloat(a.querySelector('.amount-input').value)||0))
+    .forEach(x=>c.appendChild(x));
+  save();
+}
+
+/* ── CALCULATIONS ──────────────────────── */
+function sum(id){ return [...document.querySelectorAll(`#${id} .amount-input`)].reduce((a,el)=>a+(parseFloat(el.value)||0),0); }
+function fmt(n){ return n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function getDailyTotal(){ return [...document.querySelectorAll('.day-amount-input')].reduce((a,el)=>a+(parseFloat(el.value)||0),0); }
+
+function updateDailyStats(){
+  const amounts = [...document.querySelectorAll('.day-amount-input')].map(el=>parseFloat(el.value)||0);
+  const total = amounts.reduce((a,v)=>a+v,0), active = amounts.filter(v=>v>0).length;
+  document.getElementById('dailyTotalDisp').textContent = `${CUR} ${fmt(total)}`;
+  document.getElementById('dailyAvgDisp').textContent = `${CUR} ${fmt(active?total/active:0)}`;
+  document.getElementById('dailyAvgSub').textContent = `Over ${active} active day${active!==1?'s':''}`;
+}
+
+function calcAll(){
+  const prev = parseFloat(document.getElementById('prevAmt').value)||0;
+  const inc = sum('incomeList'), daily = getDailyTotal();
+  const exp = sum('expList') + daily;
+  const net = inc - exp;              // income vs expenses only
+  const remaining = prev + inc - exp; // previous savings + income − expenses
+
+  document.getElementById('dailyFeedAmt').textContent = fmt(daily);
+  document.getElementById('totalIncomeLabel').textContent = `${CUR} ${fmt(inc)}`;
+  document.getElementById('totalExpLabel').textContent = `${CUR} ${fmt(exp)}`;
+  document.getElementById('sc-income').textContent = `${CUR} ${fmt(inc)}`;
+  document.getElementById('sc-exp').textContent = `${CUR} ${fmt(exp)}`;
+  const netEl = document.getElementById('sc-net');
+  netEl.textContent = `${CUR} ${fmt(net)}`;
+  netEl.style.color = net>=0 ? 'var(--pos)' : 'var(--neg)';
+  document.getElementById('savingsAmt').value = remaining.toFixed(2);
+
+  const d = document.getElementById('netDisplay'), card = document.getElementById('netCard');
+  d.textContent = `${CUR} ${fmt(remaining)}`;
+  d.style.color = remaining>=0 ? 'var(--pos)' : 'var(--neg)';
+  card.classList.toggle('pos', remaining>=0); card.classList.toggle('neg', remaining<0);
+
+  save(); updateBarChart(); updateDailyStats();
+}
+
+/* ── DAILY TRACKER ─────────────────────── */
+function daysInMonth(){ return new Date(+document.getElementById('selYear').value, +document.getElementById('selMonth').value+1, 0).getDate(); }
+
+function collectDailyState(){
+  return [...document.querySelectorAll('.day-card')].map(card=>({
+    date: parseInt(card.dataset.day),
+    topAmt: parseFloat(card.querySelector('.day-amount-input').value)||0,
+    items: [...card.querySelectorAll('.day-detail-row')].map(r=>({
+      caption: r.querySelector('.day-detail-caption').value||'',
+      amt: parseFloat(r.querySelector('input[type=number]').value)||0
+    })),
+    note: card.querySelector('.day-note')?.value||''
+  }));
+}
+
+function renderDailyList(saved=[]){
+  const total = daysInMonth(), box = document.getElementById('dailyList');
+  box.innerHTML='';
+  const m = +document.getElementById('selMonth').value, y = +document.getElementById('selYear').value;
+  document.getElementById('chartMonthLabel').textContent = `${MONTHS[m]} ${y}`;
+  for(let d=1; d<=total; d++){
+    box.appendChild(makeDayCard(d, saved.find(x=>x.date===d)||{date:d,topAmt:0,items:[],note:''}, y, m));
+  }
+}
+
+function isTodayCell(y,m,d){ const n=new Date(); return n.getFullYear()===y && n.getMonth()===m && n.getDate()===d; }
+
+function makeDayCard(day, saved, y, m){
+  const div = document.createElement('div');
+  div.className = 'day-card' + (isTodayCell(y,m,day)?' today':'');
+  div.dataset.day = day;
+  div.innerHTML=`
+    <div class="day-header" onclick="toggleDay(this)">
+      <div class="day-title">
+        <div class="day-num">Day ${day}${isTodayCell(y,m,day)?'<span class="tag">Today</span>':''}</div>
+        <div class="day-weekday">${WEEKDAYS[new Date(y,m,day).getDay()]}</div>
+      </div>
+      <div class="amt" onclick="event.stopPropagation()" style="width:120px">
+        <span class="curr-label">${CUR}</span>
+        <input class="amount-input day-amount-input" type="number" min="0" value="${saved.topAmt||''}" placeholder="0"
+          oninput="syncDayTotal(this.closest('.day-card'));updateBarChart()" onchange="save()">
+      </div>
+      <span class="day-toggle"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+    </div>
+    <div class="day-details"><div class="day-inner">
+      <div class="day-detail-rows"></div>
+      <button class="day-add-btn" onclick="addDayItem(this)">+ Add Item</button>
+      <textarea class="day-note" placeholder="Notes for this day..." oninput="save()">${esc(saved.note||'')}</textarea>
+      <div class="day-total-bar"><span>Items Total</span><strong class="day-items-total">${CUR} 0</strong></div>
+    </div></div>`;
+  const rows = div.querySelector('.day-detail-rows');
+  (saved.items||[]).forEach(it=>rows.appendChild(makeDayItemRow(it.caption, it.amt)));
+  if(!(saved.items||[]).length) rows.appendChild(makeDayItemRow('',0));
+  syncDayTotal(div);
+  return div;
+}
+
+function makeDayItemRow(caption='', amt=0){
+  const div = document.createElement('div');
+  div.className='day-detail-row';
+  div.innerHTML=`
+    <input class="day-detail-caption" type="text" value="${esc(caption)}" placeholder="What did you spend on?" oninput="save()">
+    <div class="day-detail-amount"><span class="curr-label">${CUR}</span>
+      <input type="number" min="0" value="${amt||''}" placeholder="0" oninput="syncDayTotal(this.closest('.day-card'));updateBarChart()" onchange="save()"></div>
+    <button class="del-btn" onclick="const c=this.closest('.day-card');this.closest('.day-detail-row').remove();syncDayTotal(c);save();updateBarChart()" title="Remove">×</button>`;
+  return div;
+}
+function addDayItem(btn){
+  const rows = btn.previousElementSibling;
+  rows.appendChild(makeDayItemRow('',0));
+  rows.lastChild.querySelector('.day-detail-caption').focus();
+  save();
+}
+function toggleDay(h){ h.closest('.day-card').classList.toggle('open'); }
+
+function syncDayTotal(card){
+  if(!card) return;
+  const items = [...card.querySelectorAll('.day-detail-amount input[type=number]')];
+  const t = items.reduce((a,el)=>a+(parseFloat(el.value)||0),0);
+  card.querySelector('.day-items-total').textContent = `${CUR} ${fmt(t)}`;
+  const top = card.querySelector('.day-amount-input');
+  if(items.length && t>0 && !(parseFloat(top.value)||0)) top.value = t.toFixed(2);
+}
+
+/* ── BAR CHART (equal-width columns for every day) ── */
+function updateBarChart(){
+  const chart = document.getElementById('barChart');
+  const days = [...document.querySelectorAll('.day-card')];
+  if(!days.length){ chart.innerHTML=''; return; }
+  const m = +document.getElementById('selMonth').value, y = +document.getElementById('selYear').value;
+  const amts = days.map(c=>parseFloat(c.querySelector('.day-amount-input').value)||0);
+  const max = Math.max(...amts,1), n = amts.length;
+  const cols = `grid-template-columns:repeat(${n},minmax(0,1fr))`;
+
+  let peak = amts.indexOf(Math.max(...amts));
+  chart.style.minWidth = (n*17)+'px';
+  chart.innerHTML =
+    `<div class="bars" style="${cols}">` + amts.map((a,i)=>
+      `<div class="slot${a>0?'':' zero'}" data-tip="Day ${i+1} · ${CUR} ${fmt(a)}">
+         <div class="bar" style="height:${a>0?Math.max(a/max*100,4):0}%"></div></div>`).join('') + `</div>` +
+    `<div class="labels" style="${cols}">` + amts.map((_,i)=>
+      `<span class="${isTodayCell(y,m,i+1)?'today':''}">${i+1}</span>`).join('') + `</div>`;
+  document.getElementById('chartReadout').textContent =
+    Math.max(...amts)>0 ? `Peak: Day ${peak+1} · ${CUR} ${fmt(amts[peak])}` : 'Tap a bar for details';
+}
+
+/* ── TABS ──────────────────────────────── */
+function switchTab(name, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+  if(name==='daily') updateBarChart();
+  else autoGrow(document.getElementById('addNote'));
+}
+
+/* ── UTILS ─────────────────────────────── */
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+
+/* ── LOCK SYSTEM ───────────────────────── */
+(function(){
+  const STORE_KEY='ft_pin_hash', HINT_KEY='ft_pin_hint', MAX_ATTEMPTS=5;
+  let attempts = 0;
+  const $ = id=>document.getElementById(id);
+
+  async function hashPin(pin){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ft-salt::'+pin));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function showError(msg){ const el=$('lockError'); el.textContent=msg; el.classList.remove('visible'); void el.offsetWidth; el.classList.add('visible'); }
+  function hideError(){ $('lockError').classList.remove('visible'); $('lockOk').classList.remove('visible'); }
+  function showOk(msg){ const el=$('lockOk'); el.textContent=msg; el.classList.add('visible'); }
+  const PANELS={login:'lockLoginExtra',setup:'lockSetupExtra',change:'lockChangeExtra',forgot:'lockForgotExtra'};
+  const SUBS={login:'Your personal finance data is protected.<br>Enter your PIN to continue.',
+    setup:'First time here! Create a PIN to protect your finance data.',
+    change:'Enter your current PIN, then choose a new one.',forgot:'Reset your PIN'};
+  function lockShow(name){
+    hideError();
+    Object.keys(PANELS).forEach(k=>{ $(PANELS[k]).style.display = k===name ? 'block' : 'none'; });
+    $('lockSubtitle').innerHTML = SUBS[name];
+    ['lockPin','lockOldPin','lockChgNew','lockChgConf','lockResetConfirm','lockNewPin','lockConfirmPin'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
+    document.querySelectorAll('.lock-eye').forEach(b=>{ b.classList.remove('shown'); const i=b.parentElement.querySelector('input'); if(i && i.id!=='lockResetConfirm') i.type='password'; });
+    if(name==='login'){ $('lockHintText').textContent = localStorage.getItem(HINT_KEY)||''; }
+    const f={login:'lockPin',setup:'lockNewPin',change:'lockOldPin',forgot:'lockResetConfirm'}[name];
+    setTimeout(()=>$(f).focus(),300);
+  }
+  window.lockShow = lockShow;
+  function unlockApp(){
+    $('lockScreen').classList.add('hidden'); $('appContent').classList.add('unlocked');
+    $('lockIndicator').classList.add('vis'); sessionStorage.setItem('ft_session','1');
+    $('lockPin').value=''; autoGrow($('addNote'));
+  }
+  window.lockApp = function(){
+    sessionStorage.removeItem('ft_session');
+    $('lockScreen').classList.remove('hidden'); $('appContent').classList.remove('unlocked');
+    $('lockIndicator').classList.remove('vis'); attempts=0; lockShow('login');
+    $('lockAttemptsMsg').textContent=''; setTimeout(()=>$('lockPin').focus(),300);
+  };
+  window.toggleLockEye = function(id, btn){
+    const i=$(id); i.type = i.type==='password' ? 'text' : 'password';
+    btn.classList.toggle('shown', i.type==='text');
+  };
+  window.lockAutoCheck = async function(){
+    const pin = $('lockPin').value, stored = localStorage.getItem(STORE_KEY);
+    if(!stored || pin.length < 4) return;
+    if(await hashPin(pin) === stored && $('lockPin').value === pin){ hideError(); unlockApp(); }
+  };
+  window.lockTryUnlock = async function(){
+    const pin = $('lockPin').value;
+    if(!pin){ showError('Please enter your PIN.'); return; }
+    if(await hashPin(pin) === localStorage.getItem(STORE_KEY)){ hideError(); unlockApp(); return; }
+    attempts++;
+    const left = MAX_ATTEMPTS - attempts;
+    if(left<=0){
+      showError('Too many failed attempts. Refresh the page to try again.');
+      $('lockPin').disabled = true; document.querySelectorAll('.lock-btn').forEach(b=>b.disabled=true);
+    }else{
+      showError('Incorrect PIN. Please try again.');
+      $('lockAttemptsMsg').textContent = `${left} attempt${left===1?'':'s'} remaining`;
+    }
+    $('lockPin').value=''; $('lockPin').focus();
+  };
+  window.lockChangeConfirm = async function(){
+    const old=$('lockOldPin').value, nw=$('lockChgNew').value, cf=$('lockChgConf').value;
+    if(!old){ showError('Enter your current PIN.'); return; }
+    if(await hashPin(old) !== localStorage.getItem(STORE_KEY)){
+      attempts++;
+      if(attempts>=MAX_ATTEMPTS){ showError('Too many failed attempts. Refresh the page to try again.'); document.querySelectorAll('.lock-btn').forEach(b=>b.disabled=true); }
+      else showError('Current PIN is incorrect.');
+      $('lockOldPin').value=''; $('lockOldPin').focus(); return;
+    }
+    if(nw.length<4){ showError('New PIN must be at least 4 characters.'); return; }
+    if(nw!==cf){ showError('New PINs do not match.'); $('lockChgConf').value=''; $('lockChgConf').focus(); return; }
+    localStorage.setItem(STORE_KEY, await hashPin(nw));
+    localStorage.setItem(HINT_KEY, `Changed on ${new Date().toLocaleDateString()}`);
+    attempts=0; lockShow('login'); showOk('PIN updated. Use your new PIN to unlock.');
+  };
+  window.lockResetApp = function(){
+    if($('lockResetConfirm').value.trim().toUpperCase()!=='RESET'){ showError('Type RESET to confirm.'); return; }
+    window.__noSave = true;  // stop the on-screen data from being written back
+    const dead=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith('ft_')) dead.push(k); }
+    dead.forEach(k=>localStorage.removeItem(k));
+    sessionStorage.removeItem('ft_session');
+    location.reload();
+  };
+  window.lockSetupConfirm = async function(){
+    const pin=$('lockNewPin').value, conf=$('lockConfirmPin').value;
+    if(!pin || pin.length<4){ showError('PIN must be at least 4 characters.'); return; }
+    if(pin!==conf){ showError('PINs do not match. Please try again.'); $('lockConfirmPin').value=''; $('lockConfirmPin').focus(); return; }
+    localStorage.setItem(STORE_KEY, await hashPin(pin));
+    localStorage.setItem(HINT_KEY, `Set on ${new Date().toLocaleDateString()}`);
+    hideError(); unlockApp();
+  };
+  (function init(){
+    const stored = localStorage.getItem(STORE_KEY);
+    if(sessionStorage.getItem('ft_session')==='1' && stored){ unlockApp(); return; }
+    lockShow(stored ? 'login' : 'setup');
+  })();
+})();
+</script>
+</body>
+</html>
